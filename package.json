@@ -1,0 +1,29 @@
+{
+  "name": "mean-login",
+  "version": "0.0.1",
+  "description": "A simple login system for now",
+  "main": "server.js",
+  "dependencies": {
+    "express": "~3.3.3",
+    "mongoose": "~3.6.14"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/gilchenzion/mean-login.git"
+  },
+  "keywords": [
+    "node",
+    "angular",
+    "express",
+    "mongoose"
+  ],
+  "author": "Gil Chen-Zion",
+  "license": "BSD",
+  "gitHead": "fb6a4ef26ed27c7aa0b4d26cb7a4f3dc11acc5ce",
+  "readmeFilename": "README.md"
+}
