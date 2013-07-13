@@ -1,5 +1,16 @@
 extends layout
 
 block content
-	h1 This is freakin sweat
-	h2 WHHHAAAA?!?!
+	h1 Login
+	form(action='/login', method='post')
+		label Email: 
+		input(type='text', name='email')
+		label Pass: 
+		input(type='password', name='pass')
+		button Submit
+	form(action='/new', method='post')
+		label Email: 
+		input(type='text', name='email')
+		label Pass: 
+		input(type='password', name='pass')
+		button(type='submit') Register

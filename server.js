@@ -1,29 +1,105 @@
 var express = require('express');
 var mongoose = require('mongoose');
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
+
 var app = express();
 
-app.configure(function() {
+
+mongoose.connect('mongodb://localhost/login');
+var db = mongoose.connection;
+
+var userSchema = mongoose.Schema({
+	email: String,
+	pass: String
+});
+
+var User = db.model('User', userSchema);
+
+passport.use(new LocalStrategy( {
+		usernameField: 'email',
+		passwordField: 'pass'
+	}, 
+	function(username, password, done) {
+		process.nextTick(function() {
+			User.findOne({ email: username }, function (err, user) {
+      		if (err) { return done(err); }
+     		if (!user) {
+       			return done(null, false, { message: 'Incorrect username.' });
+     		}
+      		return done(null, user);
+    		});
+		});
+	}
+));
+
+passport.serializeUser(function(user, done) {
+  	done(null, user.id);
+});
+
+passport.deserializeUser(function(id, done) {
+  	User.findById(id, function(err, user) {
+   		done(err, user);
+  	});
+});
+
+
+db.on('error', console.error.bind(console, 'connection error:'));
 	
+app.configure(function() {
 	app.set('views', __dirname + '/views');
   	app.set('view engine', 'jade');
   	app.set('view options', { layout: false });
+  	app.use("/public", express.static( __dirname + '/public'));
+  	
   	app.use(express.bodyParser());
   	app.use(express.methodOverride());
-	app.use(app.router);
-	app.use("/public", express.static( __dirname + '/public'));
+  	app.use(express.cookieParser());
+  	app.use(express.session({ secret: 'keyboard cat' }));
+  	app.use(passport.initialize());
+  	app.use(passport.session());
+	app.use(app.router);	
 });
 
-mongoose.connect('mongodb://localhost/login');
+app.get('/home', function(req, res) {
+	if(req.user) {
+		res.render('home', {user : req.user});
+	} else {
+		res.redirect('/');
+	}
+});
 
-var db = mongoose.connection;
+app.get('/', function(req, res){
+	res.render('index', {});
+});
 
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function () {
+app.post('/login',
+	passport.authenticate('local', {
+		successRedirect: '/home',
+		failureRedirect: '/'
+	})
+);
 
-	app.get('/', function(req, res){
-		res.render('index', {});
+app.get('/logout', function(req, res) {
+	req.logout();
+	res.redirect('/');
+});
+
+app.get('/home', function(req, res) {
+	res.render('home', {});
+});
+
+app.post('/new', function(req,res) {
+	var newUser = new User(req.body);
+	newUser.save(function(err) {
+		if(err) {
+			return handleError(err);
+		} else {
+			res.redirect('/');
+		}
 	});
-
-	app.listen(3000);
 });
+
+app.listen(3000);
+
 
