@@ -7,6 +7,7 @@ var app = express();
 
 
 mongoose.connect('mongodb://localhost/login');
+
 var db = mongoose.connection;
 
 var userSchema = mongoose.Schema({
@@ -14,7 +15,15 @@ var userSchema = mongoose.Schema({
 	pass: String
 });
 
+var pageSchema = mongoose.Schema({
+	title: String,
+	creator: String,
+	date: {type: Date, default: Date.now },
+	body: String
+});
+
 var User = db.model('User', userSchema);
+var Page = db.model('Page', pageSchema);
 
 passport.use(new LocalStrategy( {
 		usernameField: 'email',
@@ -23,11 +32,14 @@ passport.use(new LocalStrategy( {
 	function(username, password, done) {
 		process.nextTick(function() {
 			User.findOne({ email: username }, function (err, user) {
-      		if (err) { return done(err); }
-     		if (!user) {
-       			return done(null, false, { message: 'Incorrect username.' });
-     		}
-      		return done(null, user);
+      			if (err) { return done(err); }
+     			if (!user) {
+       				return done(null, false, { message: 'Incorrect username.' });
+     			}
+     			if(user.pass != password) {
+     				return done(null, false, { message: 'Incorrect password.' });
+     			}
+      			return done(null, user);
     		});
 		});
 	}
@@ -70,7 +82,11 @@ app.get('/home', function(req, res) {
 });
 
 app.get('/', function(req, res){
-	res.render('index', {});
+	if(req.user) {
+		res.render('home', {user : req.user});
+	} else {
+		res.render('index', {});
+	}
 });
 
 app.post('/login',
@@ -89,7 +105,42 @@ app.get('/home', function(req, res) {
 	res.render('home', {});
 });
 
-app.post('/new', function(req,res) {
+app.get('/success/:id', function(req, res) {
+	if(req.user)
+	{
+		Page.findOne({_id: req.params.id}, function(err, page) {
+			if(err) {
+				return handleError(err);
+			} else {
+				res.render('page', {page: page});
+			}
+		});
+	} else {
+		res.redirect('/');
+	}
+});
+
+app.post('/new', function(req, res) {
+	if(req.user) {
+		var newPage = new Page({
+			title: '',
+			creator: req.user.email,
+			body: '',
+		});
+		newPage.save(function(err) {
+			if(err) {
+				return handleError(err);
+			} else {
+				console.log('woooot');
+				res.redirect('/success/' + newPage.id);
+			}
+		});
+	} else {
+		res.redirect('/');
+	}
+});
+
+app.post('/register', function(req,res) {
 	var newUser = new User(req.body);
 	newUser.save(function(err) {
 		if(err) {
